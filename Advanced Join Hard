@@ -1,0 +1,41 @@
+/*Samantha interviews many candidates from different colleges using coding challenges and contests. Write a query to print the contest_id, hacker_id, name, and the sums of total_submissions, total_accepted_submissions, total_views, and total_unique_views for each contest sorted by contest_id. Exclude the contest from the result if all four sums are .
+
+Note: A specific contest can be used to screen candidates at more than one college, but each college only holds  screening contest.*/
+
+select  contest_id,
+        hacker_id,
+        name,
+        isnull(sum(tot_sb),0) as 'total submissions',
+        isnull(sum(tot_acpt_sb),0) as 'total accepted submissions',
+        isnull(sum(tot_vw),0) as 'total views',
+        isnull(sum(tot_unq_vw),0) as 'total unique views'
+from
+(select c.contest_id,
+        hacker_id,
+        name,
+        challenge_id
+from Challenges ch left join Colleges co on ch.college_id = co.college_id
+left join Contests c on co.contest_id = c.contest_id
+group by c.contest_id, hacker_id, name, challenge_id) a
+left join 
+(select challenge_id,
+        sum(total_views) as tot_vw,
+        sum(total_unique_views) as tot_unq_vw
+from View_Stats
+group by challenge_id) b on a.challenge_id = b.challenge_id
+left join 
+(select challenge_id,
+        sum(total_submissions) as tot_sb,
+        sum(total_accepted_submissions) as tot_acpt_sb
+from Submission_Stats
+group by challenge_id) c on a.challenge_id = c.challenge_id
+group by contest_id,
+        hacker_id,
+        name
+having sum(tot_vw)!= 0 or
+        sum(tot_unq_vw) != 0 or
+        sum(tot_sb) != 0 or
+        sum(tot_acpt_sb) !=0
+order by contest_id;
+
+
