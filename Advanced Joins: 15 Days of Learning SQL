@@ -1,0 +1,42 @@
+/*Julia conducted a 15 days of learning SQL contest. 
+The start date of the contest was March 01, 2016 and the end date was March 15, 2016.
+
+Write a query to print total number of unique hackers who made at least 1 submission each day 
+(starting on the first day of the contest), and find the hacker_id and name of the hacker who made 
+maximum number of submissions each day. If more than one such hacker has a maximum number of submissions, print the lowest hacker_id. 
+The query should print this information for each day of the contest, sorted by the date. */
+
+select submission_date,
+       [unique hacker],
+	   [lowest hacker id with max sub],
+	   name
+from
+	(select submission_date,
+		    count(distinct unique_hacker) as 'unique hacker',
+		    min( case
+				when tot_sub = max_tot_sub
+				then hacker_id
+				end
+		   ) as 'lowest hacker id with max sub'
+	 from
+		(select *,
+			   max(tot_sub) over (partition by submission_date order by submission_date) as 'max_tot_sub'
+	   
+		 from(
+				select *,
+					   case when count_occured >= convert(int,day(submission_date)) then hacker_id end as 'unique_hacker',
+					   count(submission_id) over (partition by submission_date, hacker_id order by submission_date asc) 'tot_sub'
+				from(
+						select submission_date,
+							   submission_id,
+							   s.hacker_id,
+							   name,
+							   score,
+							   count(submission_id) over (partition by s.hacker_id order by submission_date asc) as 'count_occured'
+						from Submissions s join Hackers h on s.hacker_id = h.hacker_id) a
+				) b 
+		where unique_hacker is not null
+		) c
+group by submission_date) d
+join Hackers h on d.[lowest hacker id with max sub] = h.hacker_id
+order by submission_date
